@@ -439,5 +439,85 @@ function render() {
 
 render();
 </script>
+  <script>
+// ลิงก์ SharePoint ของคุณที่ทำการแปลงสิทธิ์ให้ดาวน์โหลดข้อมูลมาคำนวณแบบเรียลไทม์เรียบร้อยแล้ว
+const excelUrl = "https://sllighting-my.sharepoint.com/:x:/g/personal/manatsanan_n_sllighting_co_th/IQAW2cGP7v5ZTYmnL-XOpQRNAXL3xDJRcJ5u9eWX6-gzn70/Download";
+
+function updateDashboardFromSharePoint() {
+    fetch(excelUrl)
+        .then(res => {
+            if (!res.ok) throw new Error("ไม่สามารถเชื่อมต่อกับ SharePoint ได้");
+            return res.arrayBuffer();
+        })
+        .then(ab => {
+            const wb = XLSX.read(new Uint8Array(ab), { type: 'array' });
+            const sheetName = wb.SheetNames[0]; // ดึงข้อมูลจากแผ่นงาน Sheet1
+            const sheet = wb.Sheets[sheetName];
+            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            
+            // ตั้งค่าตัวแปรเริ่มต้นสำหรับการคำนวณตาม UI ในรูป image_140801.png
+            let totalQty = 0;          // ยอดขายรวม (ชิ้น)
+            let totalDonation = 0;     // ยอดบริจาคสะสม (1 บาท / 1 ชิ้น)
+            let cometQty = 0;          // จำนวนสินค้าตระกูล COMET ที่ขายได้
+            
+            const cometGoal = 100000;  // เป้าหมาย 100,000 ชิ้น
+            const milestoneBonus = 0;  // สามารถเขียน logic บวกรวมโบนัสเพิ่มตรงนี้ได้ตามสิทธิ์ของยอดขายสะสม
+
+            // วนลูปอ่านข้อมูลตั้งแต่แถวที่ 75 เป็นต้นไป (อ้างอิงจากแถวข้อมูลจริงในรูป image_123a01.png)
+            for (let i = 74; i < data.length; i++) {
+                const row = data[i];
+                if (!row) continue;
+
+                const qty = parseInt(row[2]); // คอลัมน์ C: จำนวนชิ้น (Index 2)
+                const modelName = row[3] ? row[3].toString().toUpperCase() : ""; // คอลัมน์ D: รหัสรุ่น (Index 3)
+                const isSample = row[9] ? row[9].toString().toUpperCase() : ""; // คอลัมน์ J: ของแถม/ตัวอย่าง (Index 9)
+
+                if (!isNaN(qty) && qty > 0) {
+                    // นับเฉพาะรายการขายจริง ไม่นับของแถม/ตัวอย่างที่เป็นสินค้าทดสอบ (เช็คคอลัมน์ J ไม่เป็น 'Y')
+                    if (isSample !== "Y") {
+                        totalQty += qty;
+
+                        // แยกเช็คคำว่า COMET ในรหัสรุ่นเพื่อนำไปคำนวณเปอร์เซ็นต์ยอดขายสินค้า COMET แยกต่างหาก
+                        if (modelName.includes("COMET")) {
+                            cometQty += qty;
+                        }
+                    }
+                }
+            }
+
+            // 1 บาท ต่อ 1 ชิ้น ตามเงื่อนไขกิจกรรม CSR ของ SL LIGHTING
+            totalDonation = totalQty; 
+
+            // คำนวณเปอร์เซ็นต์ความสำเร็จของหลอดปรอทเมื่อเทียบกับเป้าหมายแคมเปญ
+            const progressPercent = Math.min((totalQty / cometGoal) * 100, 100);
+            const cometPercent = ((cometQty / cometGoal) * 100).toFixed(1);
+
+            // --- ส่งค่าตัวเลขขึ้นไปอัปเดตบนหน้าจอ UI แบบเรียลไทม์ ---
+            // (โปรดตรวจสอบและแก้ไข id ด้านล่างนี้ให้ตรงกับในไฟล์ HTML ของคุณนะครับ)
+            
+            // 1. ตัวเลขหลักด้านบน (ยอดรวม / 100,000 ชิ้น) และหลอดปรอทความสำเร็จ
+            document.getElementById('main-qty-display').innerText = totalQty.toLocaleString();
+            document.getElementById('remaining-qty-display').innerText = `เหลืออีก ${(cometGoal - totalQty).toLocaleString()} ชิ้น`;
+            document.getElementById('progress-bar-fill').style.width = progressPercent + '%';
+            document.getElementById('progress-percent-text').innerText = `${progressPercent.toFixed(1)}% ระดับปัจจุบัน`;
+
+            // 2. กล่องสถิติ 4 กล่องด้านล่าง
+            document.getElementById('card-total-sales').innerText = totalQty.toLocaleString();
+            document.getElementById('card-total-donation').innerText = `฿${totalDonation.toLocaleString()}`;
+            document.getElementById('card-milestone-bonus').innerText = `฿${milestoneBonus.toLocaleString()}`;
+            document.getElementById('card-comet-sales').innerText = `${cometQty.toLocaleString()} ชิ้น (${cometPercent}% ของเป้า)`;
+
+            // 3. ยอดบริจาคหลักสีส้มด้านล่างสุด พร้อมตัวเลขตัวคูณการบริจาค
+            document.getElementById('grand-donation-display').innerText = `฿${(totalDonation + milestoneBonus).toLocaleString()}`;
+            document.getElementById('donation-calculation-detail').innerText = `${totalQty.toLocaleString()} ชิ้น × ฿1 = ฿${totalDonation.toLocaleString()}`;
+        })
+        .catch(err => {
+            console.error("เกิดข้อผิดพลาดในการดึงข้อมูลจาก SharePoint เรียลไทม์: ", err);
+        });
+}
+
+// สั่งให้ฟังก์ชันเริ่มดึงข้อมูลตารางและคำนวณทันทีเมื่อมีคนกดเปิดหน้าเว็บขึ้นมา
+updateDashboardFromSharePoint();
+</script>
 </body>
 </html>
