@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HALEY's COMET — Live Tracker | SL LIGHTING</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #D62B2B;
+    --yellow: #F5A800;
+    --blue: #9ab7e6;
+    --blue-dark: #5a8fd4;
+    --green: #10B981;
+    --bg: #F5F5F5;
+    --card: #FFFFFF;
+    --border: #E8E8E8;
+    --text: #111111;
+    --muted: #777777;
+    --font: "LINESeedSansTH", "Noto Sans Thai", sans-serif;
+  }
+  @font-face {
+    font-family: "LINESeedSansTH";
+    src: url("https://cdn.jsdelivr.net/gh/line/line-seed-fonts@v1.0/fonts/LINESeedSansTH_W_Rg.woff2") format("woff2");
+    font-weight: 400; font-display: swap;
+  }
+  @font-face {
+    font-family: "LINESeedSansTH";
+    src: url("https://cdn.jsdelivr.net/gh/line/line-seed-fonts@v1.0/fonts/LINESeedSansTH_W_Bd.woff2") format("woff2");
+    font-weight: 700; font-display: swap;
+  }
+  @font-face {
+    font-family: "LINESeedSansTH";
+    src: url("https://cdn.jsdelivr.net/gh/line/line-seed-fonts@v1.0/fonts/LINESeedSansTH_W_XBd.woff2") format("woff2");
+    font-weight: 800; font-display: swap;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; font-family: var(--font); }
+  body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  .header {
+    background: var(--red);
+    padding: 20px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  .header-brand { display: flex; flex-direction: column; gap: 2px; }
+  .header-title { font-size: 22px; font-weight: 900; color: white; letter-spacing: 0.04em; }
+  .header-title span { color: var(--yellow); }
+  .header-sub { font-size: 11px; color: rgba(255,255,255,0.75); }
+  .header-meta { text-align: right; font-size: 11px; color: rgba(255,255,255,0.7); line-height: 1.6; }
+  .header-meta strong { color: var(--yellow); }
+
+  /* LAYOUT */
+  .container { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  /* CARD */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px; margin-bottom: 16px;
+  }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px; }
+
+  /* PROGRESS SECTION */
+  .progress-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .progress-total { font-size: 32px; font-weight: 900; color: var(--red); }
+  .progress-total span { font-size: 16px; font-weight: 500; color: var(--muted); margin-left: 8px; }
+  .badge-remaining {
+    background: var(--blue); color: white; font-weight: 700; font-size: 13px;
+    padding: 6px 16px; border-radius: 20px;
+  }
+  .progress-track {
+    background: #E0E8F0; border-radius: 8px; height: 28px;
+    position: relative; overflow: visible; margin-bottom: 8px;
+  }
+  .progress-bar {
+    height: 100%; border-radius: 8px;
+    background: var(--blue);
+    display: flex; align-items: center; justify-content: flex-end;
+    padding-right: 10px;
+    transition: width 1.2s cubic-bezier(.4,0,.2,1);
+    position: relative; overflow: hidden;
+  }
+  .progress-bar span { font-size: 12px; font-weight: 700; color: white; white-space: nowrap; }
+  .progress-needle {
+    position: absolute; top: -8px;
+    width: 2px; height: 44px;
+    background: var(--blue-dark); border-radius: 2px;
+    transform: translateX(-50%);
+    transition: left 1.2s cubic-bezier(.4,0,.2,1);
+  }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); position: relative; height: 20px; }
+  .progress-labels .current-label {
+    position: absolute; transform: translateX(-50%);
+    color: var(--blue-dark); font-weight: 700; font-size: 11px; white-space: nowrap;
+    transition: left 1.2s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* KPI GRID */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px;
+    border-top: 3px solid var(--accent, var(--red));
+  }
+  .kpi-value { font-size: 22px; font-weight: 900; color: var(--accent, var(--red)); }
+  .kpi-label { font-size: 12px; font-weight: 600; color: var(--text); margin-top: 2px; }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* SKU GRID */
+  .sku-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+  .sku-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 16px;
+    border-left: 4px solid var(--sku-color, #ccc);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .sku-name { font-size: 13px; font-weight: 800; color: var(--sku-color); }
+  .sku-pct { font-size: 28px; font-weight: 900; color: var(--text); line-height: 1; }
+  .sku-count { font-size: 11px; color: var(--muted); }
+  .sku-bar-track { background: #F0F0F0; border-radius: 4px; height: 8px; overflow: hidden; }
+  .sku-bar-fill { height: 100%; border-radius: 4px; background: var(--sku-color); transition: width 1.2s; }
+  .sku-target { font-size: 11px; color: var(--muted); }
+
+  /* CSR BOX */
+  .csr-box {
+    background: #FFF8F8; border: 1px solid #FFCDD2;
+    border-radius: 14px; padding: 24px;
+    text-align: center; margin-bottom: 16px;
+  }
+  .csr-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .csr-amount { font-size: 48px; font-weight: 900; color: var(--yellow); line-height: 1; }
+  .csr-sub { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.7; }
+  .csr-milestone {
+    display: inline-block; margin-top: 10px;
+    background: #FFF3CD; border: 1px solid #FFD54F;
+    border-radius: 20px; padding: 4px 16px;
+    font-size: 12px; font-weight: 700; color: #B45309;
+  }
+
+  /* WEEKLY TABLE */
+  .weekly-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .weekly-table th {
+    background: #F0F0F0; padding: 8px 10px;
+    text-align: center; color: #555; font-weight: 700;
+    border: 1px solid #E0E0E0;
+  }
+  .weekly-table td { padding: 7px 10px; border: 1px solid #EEEEEE; text-align: center; }
+  .weekly-table tr.done td { background: #FAFEFF; }
+  .weekly-table tr.pending td { background: #FAFAFA; color: #BBB; }
+  .weekly-table .week-label { text-align: left; color: #444; font-size: 11px; }
+  .weekly-table .total-row td { background: #111; color: white; font-weight: 800; font-size: 13px; }
+  .status-done { background: #D1FAE5; color: #059669; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  .status-pending { background: #F3F4F6; color: #9CA3AF; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+
+  /* FOOTER */
+  .footer { text-align: center; padding: 20px; font-size: 11px; color: #AAA; border-top: 1px solid var(--border); margin-top: 12px; }
+  .footer strong { color: var(--red); }
+
+  /* UPDATED BADGE */
+  .updated-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #E8F5E9; border: 1px solid #A5D6A7;
+    border-radius: 20px; padding: 4px 12px; font-size: 11px; color: #2E7D32;
+    margin-bottom: 16px;
+  }
+  .updated-badge::before { content: "●"; color: #4CAF50; font-size: 8px; }
+
+  @media (max-width: 480px) {
+    .progress-total { font-size: 26px; }
+    .csr-amount { font-size: 36px; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .sku-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="header-title">HALEY'S <span>COMET</span></div>
+    <div class="header-sub">Live Sales & CSR Tracker  ·  SL LIGHTING  ·  1 เม.ย. – 30 ก.ย. 2569</div>
+  </div>
+  <div class="header-meta">
+    🔄 อัปเดต: <strong id="last-updated">4 มิ.ย. 2569</strong><br>
+    <strong>sllighting.com/comet-tracker</strong>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="updated-badge" id="updated-text">อัปเดตล่าสุด: 4 มิ.ย. 2569</div>
+
+  <!-- PROGRESS -->
+  <div class="card">
+    <div class="progress-header">
+      <div>
+        <span class="progress-total" id="total-sold">5,202</span>
+        <span style="font-size:15px; color:#777"> / 100,000 ชิ้น</span>
+      </div>
+      <div class="badge-remaining" id="badge-remaining">เหลืออีก 94,798 ชิ้น</div>
+    </div>
+    <div class="progress-track" id="progress-track">
+      <div class="progress-bar" id="progress-bar" style="width:5.2%">
+        <span id="progress-pct">5.2%</span>
+      </div>
+      <div class="progress-needle" id="progress-needle" style="left:5.2%"></div>
+    </div>
+    <div class="progress-labels">
+      <span>0</span>
+      <span class="current-label" id="current-label" style="left:5.2%">5.2% ระดับปัจจุบัน</span>
+      <span>100,000</span>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--accent:#D62B2B">
+      <div class="kpi-value" id="kpi-total">5,202</div>
+      <div class="kpi-label">ยอดขายรวม (ชิ้น)</div>
+      <div class="kpi-sub">ทุก SKU รวมกัน</div>
+    </div>
+    <div class="kpi-card" style="--accent:#10B981">
+      <div class="kpi-value" id="kpi-donation">฿5,202</div>
+      <div class="kpi-label">ยอดบริจาคสะสม</div>
+      <div class="kpi-sub">1 บาท / ชิ้น</div>
+    </div>
+    <div class="kpi-card" style="--accent:#F5A800">
+      <div class="kpi-value" id="kpi-total-donate">฿5,202</div>
+      <div class="kpi-label">บริจาครวม</div>
+      <div class="kpi-sub">รวม Milestone Bonus</div>
+    </div>
+    <div class="kpi-card" style="--accent:#9ab7e6">
+      <div class="kpi-value" id="kpi-comet">4,546</div>
+      <div class="kpi-label">COMET ขายแล้ว</div>
+      <div class="kpi-sub" id="kpi-comet-pct">6.5% ของเป้า COMET</div>
+    </div>
+  </div>
+
+  <!-- CSR -->
+  <div class="csr-box">
+    <div class="csr-label">❤️ ยอดบริจาคเพื่อมูลนิธิรามาธิบดีฯ (ผู้ป่วยเด็กยากไร้)</div>
+    <div class="csr-amount" id="csr-amount">฿5,202</div>
+    <div class="csr-sub">
+      <span id="csr-units">5,202</span> ชิ้น × ฿1 = <span id="csr-base">฿5,202</span><br>
+      เมื่อยอดครบ 100,000 ชิ้น SL LIGHTING บริจาคเพิ่มอีก ฿100,000
+    </div>
+    <div class="csr-milestone" id="csr-milestone">⏳ เหลืออีก 94,798 ชิ้น → ปลดล็อก +฿100,000 Bonus!</div>
+  </div>
+
+  <!-- SKU -->
+  <div class="card">
+    <div class="card-title">ยอดขายแยกตาม SKU</div>
+    <div class="sku-grid">
+      <div class="sku-card" style="--sku-color:#E8534A">
+        <div class="sku-name">COMET 10W 0.6m</div>
+        <div class="sku-pct" id="sku-c10-pct">8%</div>
+        <div class="sku-count" id="sku-c10-count">819 / 10,000 ชิ้น</div>
+        <div class="sku-bar-track"><div class="sku-bar-fill" id="sku-c10-bar" style="width:8.2%"></div></div>
+        <div class="sku-target">เป้า 10,000 ชิ้น · RSP ฿90</div>
+      </div>
+      <div class="sku-card" style="--sku-color:#D62B2B">
+        <div class="sku-name">COMET 20W 1.2m</div>
+        <div class="sku-pct" id="sku-c20-pct">6%</div>
+        <div class="sku-count" id="sku-c20-count">3,727 / 60,000 ชิ้น</div>
+        <div class="sku-bar-track"><div class="sku-bar-fill" id="sku-c20-bar" style="width:6.2%"></div></div>
+        <div class="sku-target">เป้า 60,000 ชิ้น · RSP ฿120</div>
+      </div>
+      <div class="sku-card" style="--sku-color:#555555">
+        <div class="sku-name">HALEY 10W 0.6m</div>
+        <div class="sku-pct" id="sku-h10-pct">1%</div>
+        <div class="sku-count" id="sku-h10-count">228 / 20,000 ชิ้น</div>
+        <div class="sku-bar-track"><div class="sku-bar-fill" id="sku-h10-bar" style="width:1.1%"></div></div>
+        <div class="sku-target">เป้า 20,000 ชิ้น · RSP ฿160</div>
+      </div>
+      <div class="sku-card" style="--sku-color:#333333">
+        <div class="sku-name">HALEY 20W 1.2m</div>
+        <div class="sku-pct" id="sku-h20-pct">4%</div>
+        <div class="sku-count" id="sku-h20-count">428 / 10,000 ชิ้น</div>
+        <div class="sku-bar-track"><div class="sku-bar-fill" id="sku-h20-bar" style="width:4.3%"></div></div>
+        <div class="sku-target">เป้า 10,000 ชิ้น · RSP ฿200</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEKLY -->
+  <div class="card">
+    <div class="card-title">ยอดขายรายสัปดาห์ — 26 สัปดาห์ (เม.ย.–ก.ย. 2569)</div>
+    <div style="overflow-x:auto">
+    <table class="weekly-table" id="weekly-table">
+      <thead>
+        <tr>
+          <th>#</th><th>สัปดาห์</th><th>COMET (ชิ้น)</th><th>HALEY (ชิ้น)</th><th>รวม</th><th>สถานะ</th>
+        </tr>
+      </thead>
+      <tbody id="weekly-body"></tbody>
+    </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <strong>HALEY's COMET</strong>  ·  SL LIGHTING  ·  A Light Worth Sharing<br>
+  มูลนิธิรามาธิบดีฯ  ·  Campaign 1 เม.ย. – 30 ก.ย. 2569
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// 🔧 แก้ตัวเลขตรงนี้เพื่ออัปเดตหน้าเว็บ
+// ═══════════════════════════════════════════════
+const DATA = {
+  lastUpdated: "4 มิ.ย. 2569",
+
+  // ยอดขายสะสมแต่ละ SKU (แก้ตัวเลขเหล่านี้ทุกสัปดาห์)
+  comet10: 819,    // COMET 10W 0.6m
+  comet20: 3727,   // COMET 20W 1.2m
+  haley10: 228,    // HALEY 10W 0.6m
+  haley20: 428,    // HALEY 20W 1.2m
+
+  // ยอดขายรายสัปดาห์ (comet, haley, done)
+  weekly: [
+    ["W1 (1–7 เม.ย.)",            0,    0,  false],
+    ["W2 (8–14 เม.ย.)",           0,    0,  false],
+    ["W3 (15–21 เม.ย.)",        402,    0,   true],
+    ["W4 (22–28 เม.ย.)",          9,    0,   true],
+    ["W5 (29 เม.ย.–5 พ.ค.)",   623,    0,   true],
+    ["W6 (6–12 พ.ค.)",         1520,    0,   true],
+    ["W7 (13–19 พ.ค.)",         411,    0,   true],
+    ["W8 (20–26 พ.ค.)",         565,    0,   true],
+    ["W9 (27 พ.ค.–2 มิ.ย.)",   698,   56,   true],
+    ["W10 (3–9 มิ.ย.)",         318,  600,   true],
+    ["W11 (10–16 มิ.ย.)",          0,  0,  false],
+    ["W12 (17–23 มิ.ย.)",          0,  0,  false],
+    ["W13 (24–30 มิ.ย.)",          0,  0,  false],
+    ["W14 (1–7 ก.ค.)",             0,  0,  false],
+    ["W15 (8–14 ก.ค.)",            0,  0,  false],
+    ["W16 (15–21 ก.ค.)",           0,  0,  false],
+    ["W17 (22–28 ก.ค.)",           0,  0,  false],
+    ["W18 (29 ก.ค.–4 ส.ค.)",       0,  0,  false],
+    ["W19 (5–11 ส.ค.)",            0,  0,  false],
+    ["W20 (12–18 ส.ค.)",           0,  0,  false],
+    ["W21 (19–25 ส.ค.)",           0,  0,  false],
+    ["W22 (26 ส.ค.–1 ก.ย.)",       0,  0,  false],
+    ["W23 (2–8 ก.ย.)",             0,  0,  false],
+    ["W24 (9–15 ก.ย.)",            0,  0,  false],
+    ["W25 (16–22 ก.ย.)",           0,  0,  false],
+    ["W26 (23–30 ก.ย.)",           0,  0,  false],
+  ]
+};
+// ═══════════════════════════════════════════════
+
+const TARGET = 100000;
+const MILESTONE_BONUS = 100000;
+
+function fmt(n) { return n.toLocaleString("th-TH"); }
+function pct(v, max) { return Math.min(v / max * 100, 100); }
+
+function render() {
+  const { comet10, comet20, haley10, haley20, weekly, lastUpdated } = DATA;
+  const total = comet10 + comet20 + haley10 + haley20;
+  const comet = comet10 + comet20;
+  const haley = haley10 + haley20;
+  const donation = total;
+  const milestone = total >= TARGET;
+  const totalDonation = donation + (milestone ? MILESTONE_BONUS : 0);
+  const remaining = Math.max(TARGET - total, 0);
+  const p = pct(total, TARGET);
+
+  // Updated
+  document.getElementById("last-updated").textContent = lastUpdated;
+  document.getElementById("updated-text").textContent = "อัปเดตล่าสุด: " + lastUpdated;
+
+  // Progress
+  document.getElementById("total-sold").textContent = fmt(total);
+  document.getElementById("badge-remaining").textContent = milestone ? "✅ Milestone สำเร็จ!" : "เหลืออีก " + fmt(remaining) + " ชิ้น";
+  document.getElementById("progress-bar").style.width = p + "%";
+  document.getElementById("progress-pct").textContent = p.toFixed(1) + "%";
+  document.getElementById("progress-needle").style.left = Math.min(p, 99) + "%";
+  const labelLeft = Math.min(Math.max(p, 5), 88);
+  document.getElementById("current-label").style.left = labelLeft + "%";
+  document.getElementById("current-label").textContent = p.toFixed(1) + "% ระดับปัจจุบัน";
+
+  // KPI
+  document.getElementById("kpi-total").textContent = fmt(total);
+  document.getElementById("kpi-donation").textContent = "฿" + fmt(donation);
+  document.getElementById("kpi-total-donate").textContent = "฿" + fmt(totalDonation);
+  document.getElementById("kpi-comet").textContent = fmt(comet);
+  document.getElementById("kpi-comet-pct").textContent = pct(comet, 70000).toFixed(1) + "% ของเป้า COMET";
+
+  // CSR
+  document.getElementById("csr-amount").textContent = "฿" + fmt(totalDonation);
+  document.getElementById("csr-units").textContent = fmt(total);
+  document.getElementById("csr-base").textContent = "฿" + fmt(donation);
+  document.getElementById("csr-milestone").textContent = milestone
+    ? "🎉 Milestone สำเร็จ! บริจาคเพิ่ม ฿100,000 แล้ว!"
+    : "⏳ เหลืออีก " + fmt(remaining) + " ชิ้น → ปลดล็อก +฿100,000 Bonus!";
+
+  // SKU
+  const skus = [
+    ["c10", comet10, 10000], ["c20", comet20, 60000],
+    ["h10", haley10, 20000], ["h20", haley20, 10000]
+  ];
+  skus.forEach(([id, val, max]) => {
+    const p2 = pct(val, max);
+    document.getElementById("sku-" + id + "-pct").textContent = Math.round(p2) + "%";
+    document.getElementById("sku-" + id + "-count").textContent = fmt(val) + " / " + fmt(max) + " ชิ้น";
+    document.getElementById("sku-" + id + "-bar").style.width = p2 + "%";
+  });
+
+  // Weekly table
+  const tbody = document.getElementById("weekly-body");
+  let rows = "";
+  let totalC = 0, totalH = 0;
+  weekly.forEach(([week, c, h, done], i) => {
+    totalC += c; totalH += h;
+    const rowTotal = c + h;
+    const statusHtml = done
+      ? '<span class="status-done">✓ รายงานแล้ว</span>'
+      : '<span class="status-pending">⏳ ยังไม่ถึง</span>';
+    rows += `<tr class="${done ? "done" : "pending"}">
+      <td style="color:#aaa;font-size:11px">W${i+1}</td>
+      <td class="week-label">${week}</td>
+      <td style="color:${done&&c>0?"#D62B2B":"#ccc"};font-weight:${done&&c>0?700:400}">${done && c > 0 ? fmt(c) : "—"}</td>
+      <td style="color:${done&&h>0?"#9ab7e6":"#ccc"};font-weight:${done&&h>0?700:400}">${done && h > 0 ? fmt(h) : "—"}</td>
+      <td style="color:${done&&rowTotal>0?"#111":"#ccc"};font-weight:${done&&rowTotal>0?700:400}">${done && rowTotal > 0 ? fmt(rowTotal) : "—"}</td>
+      <td>${statusHtml}</td>
+    </tr>`;
+  });
+  rows += `<tr class="total-row">
+    <td colspan="2">รวมทั้งหมด</td>
+    <td style="color:#ff8a80">${fmt(totalC)}</td>
+    <td style="color:#9ab7e6">${fmt(totalH)}</td>
+    <td style="color:#F5A800">${fmt(totalC + totalH)}</td>
+    <td style="color:#888;font-size:11px">${weekly.filter(w=>w[2]).length}/26 สัปดาห์</td>
+  </tr>`;
+  tbody.innerHTML = rows;
+}
+
+render();
+</script>
+</body>
+</html>
