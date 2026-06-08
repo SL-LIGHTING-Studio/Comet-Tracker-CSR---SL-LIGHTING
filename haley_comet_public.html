@@ -439,45 +439,49 @@ function render() {
 
 render();
 </script>
-  <script>
-// ลิงก์ SharePoint ของคุณที่ทำการแปลงสิทธิ์ให้ดาวน์โหลดข้อมูลมาคำนวณแบบเรียลไทม์เรียบร้อยแล้ว
-const excelUrl = "https://sllighting-my.sharepoint.com/:x:/g/personal/manatsanan_n_sllighting_co_th/IQAW2cGP7v5ZTYmnL-XOpQRNAXL3xDJRcJ5u9eWX6-gzn70/Download";
+<script>
+// ลิงก์ดึงข้อมูลจาก Google Sheets ของคุณที่เปิดสิทธิ์เรียบร้อยแล้ว
+const sheetId = '1-BX5BOYBZPw5h8wyrMGB_t6mxkoSOXv2UId2d0MxOzc';
+const base = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
-function updateDashboardFromSharePoint() {
-    fetch(excelUrl)
-        .then(res => {
-            if (!res.ok) throw new Error("ไม่สามารถเชื่อมต่อกับ SharePoint ได้");
-            return res.arrayBuffer();
-        })
-        .then(ab => {
-            const wb = XLSX.read(new Uint8Array(ab), { type: 'array' });
-            const sheetName = wb.SheetNames[0]; // ดึงข้อมูลจากแผ่นงาน Sheet1
-            const sheet = wb.Sheets[sheetName];
-            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-            
-            // ตั้งค่าตัวแปรเริ่มต้นสำหรับการคำนวณตาม UI ในรูป image_140801.png
+function updateDashboardFromGoogleSheets() {
+    fetch(base)
+        .then(res => res.text())
+        .then(data => {
+            // ตัดคำขยะที่ระบบ Google Sheets ส่งมาให้เหลือแต่ JSON ที่สะอาด
+            const temp = data.substring(47).slice(0, -2);
+            const json = JSON.parse(temp);
+            const rows = json.table.rows;
+
+            // ตั้งค่าตัวแปรเริ่มต้นสำหรับการคำนวณ
             let totalQty = 0;          // ยอดขายรวม (ชิ้น)
             let totalDonation = 0;     // ยอดบริจาคสะสม (1 บาท / 1 ชิ้น)
-            let cometQty = 0;          // จำนวนสินค้าตระกูล COMET ที่ขายได้
+            let cometQty = 0;          // จำนวนสินค้าตระกูล COMET
             
-            const cometGoal = 100000;  // เป้าหมาย 100,000 ชิ้น
-            const milestoneBonus = 0;  // สามารถเขียน logic บวกรวมโบนัสเพิ่มตรงนี้ได้ตามสิทธิ์ของยอดขายสะสม
+            const cometGoal = 100000;  // เป้าหมายแคมเปญ 100,000 ชิ้น
+            const milestoneBonus = 0;  // ใส่โบนัสเพิ่มเติมของแบรนด์ได้ตรงนี้ (ถ้ามี)
 
-            // วนลูปอ่านข้อมูลตั้งแต่แถวที่ 75 เป็นต้นไป (อ้างอิงจากแถวข้อมูลจริงในรูป image_123a01.png)
-            for (let i = 74; i < data.length; i++) {
-                const row = data[i];
-                if (!row) continue;
+            // เริ่มอ่านข้อมูลตั้งแต่แถวที่ 75 เป็นต้นไป (ใน array คือ index 74)
+            for (let i = 74; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || !row.c) continue;
 
-                const qty = parseInt(row[2]); // คอลัมน์ C: จำนวนชิ้น (Index 2)
-                const modelName = row[3] ? row[3].toString().toUpperCase() : ""; // คอลัมน์ D: รหัสรุ่น (Index 3)
-                const isSample = row[9] ? row[9].toString().toUpperCase() : ""; // คอลัมน์ J: ของแถม/ตัวอย่าง (Index 9)
+                // คอลัมน์ C: จำนวนชิ้น (Index 2)
+                const qtyValue = row.c[2] ? row.c[2].v : null;
+                const qty = parseInt(qtyValue);
+
+                // คอลัมน์ D: รหัสรุ่น (Index 3)
+                const modelName = row.c[3] ? row.c[3].v.toString().toUpperCase() : "";
+
+                // คอลัมน์ J: ของแถม/ตัวอย่าง (Index 9)
+                const isSample = row.c[9] ? row.c[9].v.toString().toUpperCase() : "";
 
                 if (!isNaN(qty) && qty > 0) {
-                    // นับเฉพาะรายการขายจริง ไม่นับของแถม/ตัวอย่างที่เป็นสินค้าทดสอบ (เช็คคอลัมน์ J ไม่เป็น 'Y')
+                    // ไม่นับรายการที่เป็นของแถม/ตัวอย่าง (คอลัมน์ J ต้องไม่เท่ากับ Y)
                     if (isSample !== "Y") {
                         totalQty += qty;
 
-                        // แยกเช็คคำว่า COMET ในรหัสรุ่นเพื่อนำไปคำนวณเปอร์เซ็นต์ยอดขายสินค้า COMET แยกต่างหาก
+                        // ถ้ามีคำว่า COMET อยู่ในรหัสรุ่น ให้นับแยกไว้
                         if (modelName.includes("COMET")) {
                             cometQty += qty;
                         }
@@ -485,39 +489,57 @@ function updateDashboardFromSharePoint() {
                 }
             }
 
-            // 1 บาท ต่อ 1 ชิ้น ตามเงื่อนไขกิจกรรม CSR ของ SL LIGHTING
+            // คำนวณยอดบริจาคตามเงื่อนไข 1 ชิ้น = 1 บาท
             totalDonation = totalQty; 
 
-            // คำนวณเปอร์เซ็นต์ความสำเร็จของหลอดปรอทเมื่อเทียบกับเป้าหมายแคมเปญ
+            // คำนวณเปอร์เซ็นต์สำหรับหลอดปรอท
             const progressPercent = Math.min((totalQty / cometGoal) * 100, 100);
             const cometPercent = ((cometQty / cometGoal) * 100).toFixed(1);
 
-            // --- ส่งค่าตัวเลขขึ้นไปอัปเดตบนหน้าจอ UI แบบเรียลไทม์ ---
-            // (โปรดตรวจสอบและแก้ไข id ด้านล่างนี้ให้ตรงกับในไฟล์ HTML ของคุณนะครับ)
+            // --- 🚀 ส่งค่าตัวเลขขึ้นไปอัปเดตบนหน้าจอ UI แบบเรียลไทม์ ---
+            // (อย่าลืมเช็ค id เหล่านี้ให้ตรงกับในไฟล์ HTML หลักของคุณนะครับ)
             
-            // 1. ตัวเลขหลักด้านบน (ยอดรวม / 100,000 ชิ้น) และหลอดปรอทความสำเร็จ
-            document.getElementById('main-qty-display').innerText = totalQty.toLocaleString();
-            document.getElementById('remaining-qty-display').innerText = `เหลืออีก ${(cometGoal - totalQty).toLocaleString()} ชิ้น`;
-            document.getElementById('progress-bar-fill').style.width = progressPercent + '%';
-            document.getElementById('progress-percent-text').innerText = `${progressPercent.toFixed(1)}% ระดับปัจจุบัน`;
+            // 1. ส่วนยอดรวมด้านบนและหลอดปรอท
+            if(document.getElementById('main-qty-display')) {
+                document.getElementById('main-qty-display').innerText = totalQty.toLocaleString();
+            }
+            if(document.getElementById('remaining-qty-display')) {
+                document.getElementById('remaining-qty-display').innerText = `เหลืออีก ${(cometGoal - totalQty).toLocaleString()} ชิ้น`;
+            }
+            if(document.getElementById('progress-bar-fill')) {
+                document.getElementById('progress-bar-fill').style.width = progressPercent + '%';
+            }
+            if(document.getElementById('progress-percent-text')) {
+                document.getElementById('progress-percent-text').innerText = `${progressPercent.toFixed(1)}% ระดับปัจจุบัน`;
+            }
 
             // 2. กล่องสถิติ 4 กล่องด้านล่าง
-            document.getElementById('card-total-sales').innerText = totalQty.toLocaleString();
-            document.getElementById('card-total-donation').innerText = `฿${totalDonation.toLocaleString()}`;
-            document.getElementById('card-milestone-bonus').innerText = `฿${milestoneBonus.toLocaleString()}`;
-            document.getElementById('card-comet-sales').innerText = `${cometQty.toLocaleString()} ชิ้น (${cometPercent}% ของเป้า)`;
+            if(document.getElementById('card-total-sales')) {
+                document.getElementById('card-total-sales').innerText = totalQty.toLocaleString();
+            }
+            if(document.getElementById('card-total-donation')) {
+                document.getElementById('card-total-donation').innerText = `฿${totalDonation.toLocaleString()}`;
+            }
+            if(document.getElementById('card-milestone-bonus')) {
+                document.getElementById('card-milestone-bonus').innerText = `฿${milestoneBonus.toLocaleString()}`;
+            }
+            if(document.getElementById('card-comet-sales')) {
+                document.getElementById('card-comet-sales').innerText = `${cometQty.toLocaleString()} ชิ้น (${cometPercent}% ของเป้า)`;
+            }
 
-            // 3. ยอดบริจาคหลักสีส้มด้านล่างสุด พร้อมตัวเลขตัวคูณการบริจาค
-            document.getElementById('grand-donation-display').innerText = `฿${(totalDonation + milestoneBonus).toLocaleString()}`;
-            document.getElementById('donation-calculation-detail').innerText = `${totalQty.toLocaleString()} ชิ้น × ฿1 = ฿${totalDonation.toLocaleString()}`;
+            // 3. ยอดบริจาคหลักสีส้มด้านล่างสุด
+            if(document.getElementById('grand-donation-display')) {
+                document.getElementById('grand-donation-display').innerText = `฿${(totalDonation + milestoneBonus).toLocaleString()}`;
+            }
+            if(document.getElementById('donation-calculation-detail')) {
+                document.getElementById('donation-calculation-detail').innerText = `${totalQty.toLocaleString()} ชิ้น × ฿1 = ฿${totalDonation.toLocaleString()}`;
+            }
         })
-        .catch(err => {
-            console.error("เกิดข้อผิดพลาดในการดึงข้อมูลจาก SharePoint เรียลไทม์: ", err);
-        });
+        .catch(err => console.error("เกิดข้อผิดพลาดในการดึงข้อมูลจาก Google Sheets: ", err));
 }
 
-// สั่งให้ฟังก์ชันเริ่มดึงข้อมูลตารางและคำนวณทันทีเมื่อมีคนกดเปิดหน้าเว็บขึ้นมา
-updateDashboardFromSharePoint();
+// เรียกใช้งานฟังก์ชันทันทีเมื่อเปิดหน้าเว็บ
+updateDashboardFromGoogleSheets();
 </script>
 </body>
 </html>
